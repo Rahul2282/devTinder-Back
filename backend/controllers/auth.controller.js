@@ -128,6 +128,7 @@ export const login = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Logged in successfully",
+	  isOnboardingRequired : user.gender === null,
       user: {
         ...user._doc,
         password: undefined,
