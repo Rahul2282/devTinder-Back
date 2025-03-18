@@ -81,7 +81,8 @@ export const getFeed = async (req, res) => {
     }
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const currentUser = await User.findOne({ email: decoded.email });
+    console.log("decoded",decoded)
+    const currentUser = await User.findOne({ _id : decoded.userId });
     if (!currentUser) {
       return res.status(404).json({ message: "User not found" });
     }
