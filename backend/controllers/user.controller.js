@@ -81,7 +81,7 @@ export const getFeed = async (req, res) => {
     }
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("decoded",decoded)
+    // console.log("decoded",decoded)
     const currentUser = await User.findOne({ _id : decoded.userId });
     if (!currentUser) {
       return res.status(404).json({ message: "User not found" });
@@ -134,16 +134,16 @@ export const swipeUser = async (req, res) => {
   try {
     const { swipedUserId, direction } = req.body;
 
-    // Get current user from token
-    const token = req.cookies?.token;
-    if (!token) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res
         .status(401)
         .json({ message: "Unauthorized: No token provided" });
     }
-
+    const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const currentUser = await User.findOne({ email: decoded.email });
+    // console.log("decoded",decoded)
+    const currentUser = await User.findOne({ _id : decoded.userId });
 
     if (!currentUser) {
       return res.status(404).json({ message: "Current user not found" });
