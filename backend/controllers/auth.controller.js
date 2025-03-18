@@ -125,8 +125,11 @@ export const login = async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
 
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+
     res.status(200).json({
       success: true,
+      token, 
       message: "Logged in successfully",
 	  isOnboardingRequired : user.gender === null,
       user: {
@@ -278,6 +281,8 @@ export const resendOtp = async (req, res) => {
 	  });
 	}
 };
+
+
 
 
   
