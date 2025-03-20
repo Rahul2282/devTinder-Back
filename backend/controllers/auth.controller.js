@@ -84,8 +84,11 @@ export const verifyEmail = async (req, res) => {
 
     // await sendWelcomeEmail(user.email, user.name);
 
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+
     res.status(200).json({
       success: true,
+      token,
       message: "Email verified successfully",
       user: {
         ...user._doc,

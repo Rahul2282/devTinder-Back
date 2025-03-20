@@ -82,21 +82,23 @@ export const getFeed = async (req, res) => {
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     // console.log("decoded",decoded)
-    const currentUser = await User.findOne({ _id : decoded.userId });
+    const currentUser = await User.findOne({ _id: decoded.userId });
     if (!currentUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Get all users that the current user has swiped
-    const swipedUsers = await Swipe.find({ swipedBy: currentUser._id }).select(
-      "swipedUser"
-    );
+  
+    // Get only users that the current user has swiped left on
+    const leftSwipedUsers = await Swipe.find({
+      swipedBy: currentUser._id,
+      direction: "left",
+    }).select("swipedUser");
 
-    const swipedUserIds = swipedUsers.map((swipe) => swipe.swipedUser);
+    const leftSwipedUserIds = leftSwipedUsers.map((swipe) => swipe.swipedUser);
 
     // Build query
     let query = {
-      _id: { $nin: swipedUserIds }, // Exclude swiped users
+      _id: { $nin: leftSwipedUserIds }, // Exclude swiped users
       email: { $ne: decoded.email }, // Exclude current user
     };
 
@@ -143,7 +145,7 @@ export const swipeUser = async (req, res) => {
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     // console.log("decoded",decoded)
-    const currentUser = await User.findOne({ _id : decoded.userId });
+    const currentUser = await User.findOne({ _id: decoded.userId });
 
     if (!currentUser) {
       return res.status(404).json({ message: "Current user not found" });
@@ -179,15 +181,16 @@ export const getLikedBy = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
 
-    const token = req.cookies?.token;
-    if (!token) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res
         .status(401)
-        .json({ message: "Unauthorized: No token provided" });
+        .json({ message: "Unauthorized: No token provided" }); 
     }
-
+    const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const currentUser = await User.findOne({ email: decoded.email });
+    // console.log("decoded",decoded)
+    const currentUser = await User.findOne({ _id: decoded.userId });
     if (!currentUser) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -245,15 +248,16 @@ export const respondToLike = async (req, res) => {
     }
 
     // Get current user from token
-    const token = req.cookies?.token;
-    if (!token) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res
         .status(401)
         .json({ message: "Unauthorized: No token provided" });
     }
-
+    const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const currentUser = await User.findOne({ email: decoded.email });
+    // console.log("decoded",decoded)
+    const currentUser = await User.findOne({ _id: decoded.userId });
 
     if (!currentUser) {
       return res.status(404).json({ message: "Current user not found" });
@@ -288,15 +292,16 @@ export const getMatches = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
 
-    const token = req.cookies?.token;
-    if (!token) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res
         .status(401)
         .json({ message: "Unauthorized: No token provided" });
     }
-
+    const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const currentUser = await User.findOne({ email: decoded.email });
+    // console.log("decoded",decoded)
+    const currentUser = await User.findOne({ _id: decoded.userId });
     if (!currentUser) {
       return res.status(404).json({ message: "User not found" });
     }
