@@ -144,7 +144,7 @@ export const swipeUser = async (req, res) => {
     }
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // console.log("decoded",decoded)
+
     const currentUser = await User.findOne({ _id: decoded.userId });
 
     if (!currentUser) {
@@ -156,7 +156,20 @@ export const swipeUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid swipe direction" });
     }
 
-    // Create swipe record
+    // Find an existing swipe record
+    const existingSwipe = await Swipe.findOne({
+      swipedBy: currentUser._id,
+      swipedUser: swipedUserId,
+    });
+
+    if (existingSwipe) {
+      // Update direction if a swipe record exists
+      existingSwipe.direction = direction;
+      await existingSwipe.save();
+      return res.status(200).json({ message: "Swipe updated successfully" });
+    }
+
+    // If no existing swipe record, create a new one
     await Swipe.create({
       swipedBy: currentUser._id,
       swipedUser: swipedUserId,
@@ -165,16 +178,11 @@ export const swipeUser = async (req, res) => {
 
     res.status(200).json({ message: "Swipe recorded successfully" });
   } catch (error) {
-    if (error.code === 11000) {
-      // Duplicate key error
-      return res
-        .status(400)
-        .json({ message: "You have already swiped this user" });
-    }
     console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
+
 
 export const getLikedBy = async (req, res) => {
   try {
