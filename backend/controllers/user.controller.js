@@ -199,7 +199,7 @@ export const getLikedBy = async (req, res) => {
     }
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // console.log("decoded",decoded)
+    
     const currentUser = await User.findOne({ _id: decoded.userId });
     if (!currentUser) {
       return res.status(404).json({ message: "User not found" });
@@ -207,18 +207,17 @@ export const getLikedBy = async (req, res) => {
 
     const skip = (page - 1) * limit;
 
-    // Find users who I've left-swiped (rejected)
-    const rejectedUserIds = await Swipe.find({
-      swipedBy: currentUser._id,
-      direction: "left",
+    // Find users whom the current user has responded to (either accepted or rejected)
+    const respondedUserIds = await Swipe.find({
+      swipedBy: currentUser._id, // Current user made a decision
+      direction: { $in: ["left", "right"] }, // Either accepted or rejected
     }).distinct("swipedUser");
 
-    // Find right swipes where current user is the swipedUser
-    // but exclude those who I've rejected
+    // Get users who liked the current user but have NOT been responded to
     const rightSwipes = await Swipe.find({
       swipedUser: currentUser._id,
       direction: "right",
-      swipedBy: { $nin: rejectedUserIds },
+      swipedBy: { $nin: respondedUserIds }, // Exclude accepted/rejected users
     })
       .populate("swipedBy", "-password")
       .skip(skip)
@@ -228,7 +227,7 @@ export const getLikedBy = async (req, res) => {
     const totalLikes = await Swipe.countDocuments({
       swipedUser: currentUser._id,
       direction: "right",
-      swipedBy: { $nin: rejectedUserIds },
+      swipedBy: { $nin: respondedUserIds },
     });
 
     const totalPages = Math.ceil(totalLikes / limit);
@@ -246,6 +245,7 @@ export const getLikedBy = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 export const respondToLike = async (req, res) => {
   try {
