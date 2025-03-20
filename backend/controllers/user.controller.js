@@ -72,22 +72,19 @@ export const getFeed = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
 
-    // Extract token from cookies
+    // Extract token from authorization header
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res
-        .status(401)
-        .json({ message: "Unauthorized: No token provided" });
+      return res.status(401).json({ message: "Unauthorized: No token provided" });
     }
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // console.log("decoded",decoded)
+
     const currentUser = await User.findOne({ _id: decoded.userId });
     if (!currentUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-  
     // Get only users that the current user has swiped left on
     const leftSwipedUsers = await Swipe.find({
       swipedBy: currentUser._id,
@@ -98,23 +95,27 @@ export const getFeed = async (req, res) => {
 
     // Build query
     let query = {
-      _id: { $nin: leftSwipedUserIds }, // Exclude swiped users
+      _id: { $nin: leftSwipedUserIds }, // Exclude left-swiped users
       email: { $ne: decoded.email }, // Exclude current user
     };
 
-    // Apply gender preference filter
-    if (currentUser.genderPreference === "male") {
-      query.gender = "male";
-    } else if (currentUser.genderPreference === "female") {
-      query.gender = "female";
-    }
-
     const skip = (page - 1) * limit;
 
-    const users = await User.find(query)
+    let users = await User.find(query)
       .skip(skip)
       .limit(limit)
       .select("-password");
+
+    // Fisher-Yates shuffle algorithm (Better than sort(() => Math.random() - 0.5))
+    const shuffleArray = (array) => {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    };
+
+    users = shuffleArray(users); // Shuffle the retrieved users
 
     const totalUsers = await User.countDocuments(query);
     const totalPages = Math.ceil(totalUsers / limit);
@@ -131,6 +132,7 @@ export const getFeed = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 export const swipeUser = async (req, res) => {
   try {
@@ -264,36 +266,36 @@ export const respondToLike = async (req, res) => {
     }
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // console.log("decoded",decoded)
+
     const currentUser = await User.findOne({ _id: decoded.userId });
 
     if (!currentUser) {
       return res.status(404).json({ message: "Current user not found" });
     }
 
-    // Create swipe record (left swipe for reject, right swipe for accept)
-    await Swipe.create({
-      swipedBy: currentUser._id,
-      swipedUser: userId,
-      direction: action === "accept" ? "right" : "left",
-    });
+    // Determine the swipe direction
+    const direction = action === "accept" ? "right" : "left";
+
+    // Use `findOneAndUpdate` to update existing swipes or create a new one
+    const swipe = await Swipe.findOneAndUpdate(
+      { swipedBy: currentUser._id, swipedUser: userId }, // Find existing swipe
+      { direction }, // Update direction
+      { upsert: true, new: true } // Create if not exists, return updated document
+    );
 
     res.status(200).json({
       message:
         action === "accept"
           ? "Match created successfully!"
           : "Profile rejected successfully",
+      swipe,
     });
   } catch (error) {
-    if (error.code === 11000) {
-      return res
-        .status(400)
-        .json({ message: "You have already responded to this user" });
-    }
     console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
+
 
 export const getMatches = async (req, res) => {
   try {

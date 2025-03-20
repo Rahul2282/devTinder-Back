@@ -2,7 +2,8 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-// import path from "path";
+import http from "http";
+import socket from "socket.io";
 
 import { connectDB } from "./db/connectDB.js";
 
@@ -23,15 +24,21 @@ app.use(cookieParser()); // allows us to parse incoming cookies
 app.use("/api/auth", authRoutes);
 app.use("/api/users",userRoutes);
 
-// if (process.env.NODE_ENV === "production") {
-// 	app.use(express.static(path.join(__dirname, "/frontend/dist")));
 
-// 	app.get("*", (req, res) => {
-// 		res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
-// 	});
-// }
+const server = http.createServer(app);
+const io = socket(server,{
+	cors: {
+		origin: "http://localhost:5174",
+	},
+});
 
-app.listen(PORT, () => {
+io.on("connection", (socket) => {
+	// handle the connection
+});
+
+
+
+server.listen(PORT, () => {
 	connectDB();
 	console.log("Server is running on port: ", PORT);
 });
