@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import http from "http";
-import socket from "socket.io";
+// import socket from "socket.io";
 
 import { connectDB } from "./db/connectDB.js";
 
@@ -26,15 +26,15 @@ app.use("/api/users",userRoutes);
 
 
 const server = http.createServer(app);
-const io = socket(server,{
-	cors: {
-		origin: "http://localhost:5174",
-	},
-});
+// const io = socket(server,{
+// 	cors: {
+// 		origin: "http://localhost:5174",
+// 	},
+// });
 
-io.on("connection", (socket) => {
-	// handle the connection
-});
+// io.on("connection", (socket) => {
+// 	// handle the connection
+// });
 
 
 
