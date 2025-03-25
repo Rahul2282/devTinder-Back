@@ -69,12 +69,10 @@ export const verifyEmail = async (req, res) => {
     });
 
     if (!user) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Invalid or expired verification code",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired verification code",
+      });
     }
 
     user.isVerified = true;
@@ -84,7 +82,9 @@ export const verifyEmail = async (req, res) => {
 
     // await sendWelcomeEmail(user.email, user.name);
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
 
     res.status(200).json({
       success: true,
@@ -128,13 +128,15 @@ export const login = async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
 
     res.status(200).json({
       success: true,
-      token, 
+      token,
       message: "Logged in successfully",
-	  isOnboardingRequired : user.gender === null,
+      isOnboardingRequired: user.gender === null,
       user: {
         ...user._doc,
         password: undefined,
@@ -177,12 +179,10 @@ export const forgotPassword = async (req, res) => {
       `${process.env.CLIENT_URL}/reset-password/${resetToken}`
     );
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Password reset link sent to your email",
-      });
+    res.status(200).json({
+      success: true,
+      message: "Password reset link sent to your email",
+    });
   } catch (error) {
     console.log("Error in forgotPassword ", error);
     res.status(400).json({ success: false, message: error.message });
@@ -226,7 +226,18 @@ export const resetPassword = async (req, res) => {
 
 export const checkAuth = async (req, res) => {
   try {
-    const user = await User.findById(req.userId).select("-password");
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: No token provided" });
+    }
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findOne({ _id: decoded.userId }).select(
+      "-password"
+    );
     if (!user) {
       return res
         .status(400)
@@ -241,51 +252,46 @@ export const checkAuth = async (req, res) => {
 };
 
 export const resendOtp = async (req, res) => {
-	const { email } = req.body;
-	try {
-	  const user = await User.findOne({ email });
-	  if (!user) {
-		return res.status(400).json({
-		  success: false,
-		  message: "User does not exist",
-		});
-	  }
-  
-	  if (user.isVerified) {
-		return res.status(200).json({
-		  success: true,
-		  message: "User is already verified",
-		});
-	  }
-  
-	  const verificationToken = Math.floor(
-		100000 + Math.random() * 900000
-	  ).toString();
-  
-	  user.verificationToken = verificationToken;
-	  user.verificationTokenExpiresAt = Date.now() + 5 * 60 * 1000;
-  
-	  await user.save();
-  
-	//   await sendVerificationEmail(user.email, verificationToken);
-  
-	  res.status(200).json({
-		success: true,
-		message: "OTP sent successfully",
-		user: {
-		  ...user._doc,
-		  password: undefined,
-		},
-	  });
-	} catch (error) {
-	  res.status(400).json({
-		success: false,
-		message: error.message,
-	  });
-	}
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "User does not exist",
+      });
+    }
+
+    if (user.isVerified) {
+      return res.status(200).json({
+        success: true,
+        message: "User is already verified",
+      });
+    }
+
+    const verificationToken = Math.floor(
+      100000 + Math.random() * 900000
+    ).toString();
+
+    user.verificationToken = verificationToken;
+    user.verificationTokenExpiresAt = Date.now() + 5 * 60 * 1000;
+
+    await user.save();
+
+    //   await sendVerificationEmail(user.email, verificationToken);
+
+    res.status(200).json({
+      success: true,
+      message: "OTP sent successfully",
+      user: {
+        ...user._doc,
+        password: undefined,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
-
-
-
-
-  

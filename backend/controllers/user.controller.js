@@ -85,7 +85,7 @@ export const getFeed = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Get only users that the current user has swiped left on
+    // Get users that the current user has left-swiped
     const leftSwipedUsers = await Swipe.find({
       swipedBy: currentUser._id,
       direction: "left",
@@ -93,10 +93,33 @@ export const getFeed = async (req, res) => {
 
     const leftSwipedUserIds = leftSwipedUsers.map((swipe) => swipe.swipedUser);
 
+    // Get users that the current user has right-swiped
+    const rightSwipedUsers = await Swipe.find({
+      swipedBy: currentUser._id,
+      direction: "right",
+    }).select("swipedUser");
+
+    const rightSwipedUserIds = rightSwipedUsers.map((swipe) => swipe.swipedUser);
+
+    // Get mutual right-swipes (matches)
+    const matchedUsers = await Swipe.find({
+      swipedBy: { $in: rightSwipedUserIds },
+      swipedUser: currentUser._id,
+      direction: "right",
+    }).select("swipedBy");
+
+    const matchedUserIds = matchedUsers.map((swipe) => swipe.swipedBy);
+
     // Build query
     let query = {
-      _id: { $nin: leftSwipedUserIds }, // Exclude left-swiped users
+      _id: { 
+        $nin: [...leftSwipedUserIds, ...matchedUserIds] // Exclude left-swiped and matched users
+      }, 
       email: { $ne: decoded.email }, // Exclude current user
+      $or: [
+        { _id: { $in: rightSwipedUserIds } }, // Include right-swiped users
+        { _id: { $nin: rightSwipedUserIds } } // Also include users who haven't been swiped on
+      ]
     };
 
     const skip = (page - 1) * limit;
@@ -106,7 +129,7 @@ export const getFeed = async (req, res) => {
       .limit(limit)
       .select("-password");
 
-    // Fisher-Yates shuffle algorithm (Better than sort(() => Math.random() - 0.5))
+    // Fisher-Yates shuffle algorithm
     const shuffleArray = (array) => {
       for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -132,6 +155,7 @@ export const getFeed = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 
 export const swipeUser = async (req, res) => {
@@ -356,3 +380,5 @@ export const getMatches = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
