@@ -85,7 +85,15 @@ export const getFeed = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Get users that the current user has left-swiped
+    // Get gender preference
+    const preferredGender = currentUser.genderPreference;
+
+    // If genderPreference is null, return an empty feed
+    if (!preferredGender) {
+      return res.status(400).json({ message: "Please set your gender preference." });
+    }
+
+    // Get users the current user has swiped left on
     const leftSwipedUsers = await Swipe.find({
       swipedBy: currentUser._id,
       direction: "left",
@@ -93,7 +101,7 @@ export const getFeed = async (req, res) => {
 
     const leftSwipedUserIds = leftSwipedUsers.map((swipe) => swipe.swipedUser);
 
-    // Get users that the current user has right-swiped
+    // Get users the current user has swiped right on
     const rightSwipedUsers = await Swipe.find({
       swipedBy: currentUser._id,
       direction: "right",
@@ -111,11 +119,17 @@ export const getFeed = async (req, res) => {
     const matchedUserIds = matchedUsers.map((swipe) => swipe.swipedBy);
 
     // Build query
+    let genderFilter = {};
+    if (preferredGender !== "both") {
+      genderFilter = { gender: preferredGender };
+    }
+
     let query = {
       _id: { 
         $nin: [...leftSwipedUserIds, ...matchedUserIds] // Exclude left-swiped and matched users
       }, 
       email: { $ne: decoded.email }, // Exclude current user
+      ...genderFilter, // Apply gender preference filter
       $or: [
         { _id: { $in: rightSwipedUserIds } }, // Include right-swiped users
         { _id: { $nin: rightSwipedUserIds } } // Also include users who haven't been swiped on
@@ -155,6 +169,7 @@ export const getFeed = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 
 
