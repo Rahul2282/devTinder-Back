@@ -56,7 +56,7 @@ export const setupSocket = (server) => {
                         lastMessage: new Date()
                     },
                     { new: true }
-                ).populate('messages.sender', 'name profileUrl');
+                )
 
                 const latestMessage = updatedChat.messages[updatedChat.messages.length - 1];
 
