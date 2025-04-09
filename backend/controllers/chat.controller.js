@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 // Find room between two users
 export const findRoom = async (req, res) => {
   try {
-    const { targetUserId } = req.body.targetUserId;
+    const targetUserId  = req.body.targetUserId;
     // Extract token from authorization header
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
