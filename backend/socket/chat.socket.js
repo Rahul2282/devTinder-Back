@@ -72,6 +72,20 @@ export const setupSocket = (server) => {
             }
         });
 
+        socket.on("typing_start", ({ chatId }) => {
+            socket.to(chatId).emit("user_typing", {
+                chatId,
+                userId: socket.userId
+            });
+        });
+
+        socket.on("typing_stop", ({ chatId }) => {
+            socket.to(chatId).emit("user_stopped_typing", {
+                chatId,
+                userId: socket.userId
+            });
+        });
+
         // Handle read receipts
         socket.on("mark_read", async ({ chatId, messageIds }) => {
             try {
