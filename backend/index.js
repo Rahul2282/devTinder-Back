@@ -2,7 +2,9 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import http from "http";
+// import http from "http";
+import { createServer } from "http";
+import { setupSocket } from "./socket/chat.socket.js";
 // import socket from "socket.io";
 
 import { connectDB } from "./db/connectDB.js";
@@ -13,6 +15,9 @@ import userRoutes from "./route/user.route.js";
 dotenv.config();
 
 const app = express();
+const server = createServer(app);
+const io = setupSocket(server);
+
 const PORT = process.env.PORT || 5000;
 // const __dirname = path.resolve();
 
@@ -23,18 +28,6 @@ app.use(cookieParser()); // allows us to parse incoming cookies
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users",userRoutes);
-
-
-const server = http.createServer(app);
-// const io = socket(server,{
-// 	cors: {
-// 		origin: "http://localhost:5174",
-// 	},
-// });
-
-// io.on("connection", (socket) => {
-// 	// handle the connection
-// });
 
 
 

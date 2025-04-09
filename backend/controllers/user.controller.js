@@ -231,7 +231,6 @@ export const swipeUser = async (req, res) => {
   }
 };
 
-
 export const getLikedBy = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
