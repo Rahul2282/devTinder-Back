@@ -23,7 +23,10 @@ const io = setupSocket(server);
 const PORT = process.env.PORT || 5000;
 // const __dirname = path.resolve();
 
-app.use(cors({ origin: "http://localhost:5174", credentials: true }));
+app.use(cors({ 
+	origin: process.env.FRONTEND_URL || "http://localhost:5174", 
+	credentials: true 
+}));
 
 app.use(express.json()); // allows us to parse incoming requests:req.body
 app.use(cookieParser()); // allows us to parse incoming cookies

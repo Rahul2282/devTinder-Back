@@ -5,7 +5,8 @@ import { Chat } from "../models/chat.model.js";
 export const setupSocket = (server) => {
     const io = new Server(server, {
         cors: {
-            origin: process.env.FRONTEND_URL,
+            origin: "http://localhost:5174",
+            credentials: true,
             methods: ["GET", "POST"]
         }
     });
