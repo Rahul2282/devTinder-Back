@@ -11,6 +11,8 @@ import { connectDB } from "./db/connectDB.js";
 
 import authRoutes from "./route/auth.route.js";
 import userRoutes from "./route/user.route.js";
+import chatRoutes from "./route/chat.route.js";
+
 
 dotenv.config();
 
@@ -28,6 +30,7 @@ app.use(cookieParser()); // allows us to parse incoming cookies
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users",userRoutes);
+app.use("/api/chats",chatRoutes);
 
 
 
